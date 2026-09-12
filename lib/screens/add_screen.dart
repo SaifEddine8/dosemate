@@ -331,7 +331,7 @@ class _AddScreenState extends State<AddScreen> {
                                       : 'الانتهاء: ${_formatDate(_endDate!)}',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: _endDate == null ? Colors.grey.shade600 : Colors.black,
+                                    color: _endDate == null ? Colors.grey.shade600 : Colors.deepPurple,
                                   ),
                                 ),
                                 style: OutlinedButton.styleFrom(

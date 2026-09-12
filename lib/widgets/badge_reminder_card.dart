@@ -8,7 +8,7 @@ class BadgeReminderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
      if (status == 'taken') return const Chip(label: Text('تمت'));
-    if (status == 'snoozed') return const Chip(label: Text('مُتخطاة'));
+    if (status == 'snoozed') return const Chip(label: Text('مؤجلة'));
     if (status == 'missed') return const Chip(label: Text('فُوتت'));
     if (!timeReached) return const Chip(label: Text('قادمة'));
     return const Chip(label: Text('حانت الآن!'));
