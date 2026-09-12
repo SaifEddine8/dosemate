@@ -24,7 +24,7 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
   Map<String, Widget> screenMap = {
     'اليوم': Icon(Icons.today),
     'اضافة': Icon(Icons.add),
-    'التاريخ': Icon(Icons.history),
+    'المراقبه': Icon(Icons.health_and_safety),
     'الملف الشخصي': Icon(Icons.person),
   };
 int index=0;
