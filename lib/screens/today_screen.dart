@@ -48,25 +48,51 @@ class _TodayScreenState extends State<TodayScreen> {
     return now.isAfter(twoHoursAfter);
   }
 
+  bool _isDoseDueToday(DoseReminder reminder) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final startDate = DateTime(
+      reminder.startDate.year,
+      reminder.startDate.month,
+      reminder.startDate.day,
+    );
+
+    if (today.isBefore(startDate)) {
+      return false;
+    }
+
+    switch (reminder.frequency) {
+      case 'daily':
+        return true; 
+
+      case 'weekly':
+        return today.weekday == startDate.weekday;
+
+   
+      default:
+        return true;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<ReminderBloc, ReminderState>(
-  listenWhen: (previous, current) {
-    return current is ReminderUpdateSuccess && previous != current;
-  },
-  listener: (context, state) {
-    if (state is ReminderUpdateSuccess) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      listenWhen: (previous, current) {
+        return current is ReminderUpdateSuccess && previous != current;
+      },
+      listener: (context, state) {
+        if (state is ReminderUpdateSuccess) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(state.message, style: AppStyles.body),
-          backgroundColor: ConstantColors.secondary,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
-  },
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message, style: AppStyles.body),
+              backgroundColor: ConstantColors.secondary,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      },
       child: Scaffold(
         backgroundColor: ConstantColors.tertiaryColor,
         appBar: AppBar(
@@ -78,21 +104,29 @@ class _TodayScreenState extends State<TodayScreen> {
           ),
           centerTitle: true,
         ),
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                BlocBuilder<ReminderBloc, ReminderState>(
-                  builder: (context, state) {
-                    final userReminders = state.reminders.where((reminder)=>reminder.userId==currentUser!.id).toList();
-                    int completedCount =
-                        userReminders.where((item) => item.status == 'taken').length;
-                    double progress =
-                        userReminders.isEmpty ? 0 : completedCount / userReminders.length;
+        body: BlocBuilder<ReminderBloc, ReminderState>(
+          builder: (context, state) {
+            final userTodayReminders = currentUser == null
+                ? <DoseReminder>[]
+                : state.reminders.where((reminder) {
+                    final isMyDose = reminder.userId == currentUser!.id;
+                    final isDueToday = _isDoseDueToday(reminder);
+                    return isMyDose && isDueToday;
+                  }).toList();
 
-                    return Container(
+            final int completedCount =
+                userTodayReminders.where((item) => item.status == 'taken').length;
+            final double progress = userTodayReminders.isEmpty
+                ? 0
+                : completedCount / userTodayReminders.length;
+
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: ConstantColors.primaryColor,
@@ -107,7 +141,7 @@ class _TodayScreenState extends State<TodayScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'أنجزت $completedCount من أصل ${userReminders.length} جرعات',
+                            'أنجزت $completedCount من أصل ${userTodayReminders.length} جرعات',
                             style: AppStyles.subtitle.copyWith(color: Colors.white),
                           ),
                           const SizedBox(height: 10),
@@ -121,52 +155,44 @@ class _TodayScreenState extends State<TodayScreen> {
                           ),
                         ],
                       ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'جدول أدوية اليوم',
-                  style: AppStyles.subtitle.copyWith(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: BlocBuilder<ReminderBloc, ReminderState>(
-                    builder: (context, state) {
-                      final userReminders = state.reminders.where((reminder)=>reminder.userId==currentUser!.id).toList();
-
-                      if (userReminders.isEmpty) {
-                        return Center(
-                          child: Text(
-                            'لا توجد جرعات مضافة لليوم',
-                            style: AppStyles.body.copyWith(color: Colors.grey),
-                          ),
-                        );
-                      }
-
-                      return ListView.builder(
-                        itemCount: userReminders.length,
-                        itemBuilder: (context, index) {
-                          final reminder =userReminders[index];
-                          return ReminderCard(
-                            reminder: reminder,
-                            timeReached: _isTimeReached(
-                              reminder.reminderTime,
-                              reminder.snoonzedUntil,
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'جدول أدوية اليوم',
+                      style: AppStyles.subtitle.copyWith(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: userTodayReminders.isEmpty
+                          ? Center(
+                              child: Text(
+                                'لا توجد جرعات مستحقة لليوم',
+                                style: AppStyles.body.copyWith(color: Colors.grey),
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: userTodayReminders.length,
+                              itemBuilder: (context, index) {
+                                final reminder = userTodayReminders[index];
+                                return ReminderCard(
+                                  reminder: reminder,
+                                  timeReached: _isTimeReached(
+                                    reminder.reminderTime,
+                                    reminder.snoonzedUntil,
+                                  ),
+                                  isMissed: _isDoseMissed(reminder.reminderTime),
+                                );
+                              },
                             ),
-                            isMissed: _isDoseMissed(reminder.reminderTime),
-                          );
-                        },
-                      );
-                    },
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
       ),
     );

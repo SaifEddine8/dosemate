@@ -40,7 +40,7 @@ class _AddScreenState extends State<AddScreen> {
   DateTime _startDate = DateTime.now();
   DateTime? _endDate;
   String _selectedFrequency = 'يومياً';
-  final List<String> _frequencies = ['يومياً', 'أسبوعياً', 'حسب الحاجة'];
+  final List<String> _frequencies = ['يومياً', 'أسبوعياً', ];
 
   @override
   void dispose() {
